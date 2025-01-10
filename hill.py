@@ -16,31 +16,36 @@ alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 def E(texto: str, chave: np.ndarray, tamanho: int) -> str:
     # Verificar se o texto tem tamanho par
-    if len(texto) % 2 != 0:
-        texto += "J"
+    if len(texto) % tamanho != 0:
+        texto += "J" * (len(texto) & tamanho)
     texto = texto.upper()
     texto = texto.replace(" ", "")
     
     # Separar o texto em duplas
-    texto_formatado = [texto[x:x+2] for x in range(0, len(texto), 2)]
+    texto_formatado = [texto[x:x+tamanho] for x in range(0, len(texto), tamanho)]
 
     cifra = []
     for texfor in texto_formatado:
-        p1 = alfabeto.index(texfor[0])
-        p2 = alfabeto.index(texfor[1])
+        p = [alfabeto.index(t) for t in list(texfor)]
+        p_vetor = np.array(p)
+        p_vetor = p_vetor.reshape(-1, 1)
 
-        p_vetor = np.array([p1, p2])
+        result = np.matmul(chave, p_vetor) % 26
 
-        resultado = np.matmul(chave, p_vetor) % 26
+        resultado = result.tolist()
 
-        print(resultado)
-
-        cifra.append(alfabeto[resultado[0]] + alfabeto[resultado[1]])
+        cifra.append("".join([alfabeto[r[0]] for r in resultado]))
     
     return "".join(cifra)
 
-def D(texto: str, chave) -> str:
-    pass
+def D(texto: str, chave: np.ndarray, tamanho: int) -> str:
+    det = int(round(np.linalg.det(chave)))  # Determinante da matriz
+    det_inv = pow(det, -1, 26)  # Inverso modular do determinante
+    adjugate = np.round(det * np.linalg.inv(chave)).astype(int)  # Matriz adjunta
+    chave = (det_inv * adjugate) % 26  # Inverso modular da matriz
+    print(chave)
+    return E(texto, chave, tamanho)
+
 
 texto = input("Digite um texto para ser processado: ")
 tamanho = int(input(f"Digite um tamanho de chave (deve ser menor que {len(texto)}): "))
@@ -76,5 +81,5 @@ if resposta == 1:
     print(E(texto, matriz_calculo, tamanho))
 
 if resposta == 2:
-    print(D(texto, chave))
+    print(D(texto, matriz_calculo, tamanho))
     
